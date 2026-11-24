@@ -162,7 +162,17 @@ static int setPlasmaLoginWallpaper(const QString &plugin, const QString &configJ
 
         if (values.contains(u"Image"_s)) {
             // Copy the original image to somewhere the greeter can read it
-            const QUrl imageUri = QUrl(values.value(u"Image"_s), QUrl::StrictMode).adjusted(QUrl::StripTrailingSlash);
+            const QString rawImage = values.value(u"Image"_s);
+            QUrl imageUri;
+            if (rawImage.startsWith(QLatin1Char('/'))) {
+                // plain path (e.g. Dolphin's "Set as Wallpaper")
+                imageUri = QUrl::fromLocalFile(rawImage);
+            } else {
+                // Plasma writes spaces unencoded, so strict parsing rejects valid wallpaper paths
+                imageUri = QUrl(rawImage, QUrl::TolerantMode);
+            }
+            imageUri = imageUri.adjusted(QUrl::StripTrailingSlash);
+
             if (!imageUri.isValid() || imageUri.scheme().isEmpty()) {
                 error = "not a valid url, e.g 'file:///path/to/wallpaper.png'";
                 return 1;
